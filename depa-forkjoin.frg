@@ -72,8 +72,16 @@ fun nextIdx[indices: set Int]: Int {
     else add[max[indices], 1]
 }
 
+pred spawnPoint[v: Vertex] {
+    #v.children > 1
+}
+
+pred touchPoint[v: Vertex] {
+    #children.v > 1
+}
+
 pred pathCalc {
-    all spawn: {parent: Vertex | #parent.children > 1} {
+    all spawn: {v: Vertex | spawnPoint[v]} {
         let j = nextIdx[inds[spawn.path]] | {
             one left: spawn.children | left.path[j] = 4
             one right: spawn.children | right.path[j] = -4
@@ -83,16 +91,22 @@ pred pathCalc {
         }
     }
 
-    all touch: {child: Vertex | #children.child > 1} {
+    all touch: {v: Vertex | touchPoint[v]} {
         let targetIdx = inds[children.touch.path] | {
             all i: targetIdx | touch.path[i] = (sum parent: children.touch | sum[parent.path[i]])
             all j: Int - targetIdx | touch.path[j] = children.touch.path[j]
         }
     }
+}
 
-    // all dummy: {v: Vertex | #children.v = 1 and #v.children = 1} {
-    //     all i: Int | dummy.path[i] = children.dummy.path[i]
-    // }
+-- a bit of a hack to get around useless intermediate vertices appearing
+-- The premise is that DePa only creates vertices when they are actually needed
+pred onlyNecessary {
+    all v: Vertex | {
+        spawnPoint[v] or
+        touchPoint[v] or
+        spawnPoint[children.v] and touchPoint[v.children]
+    }
 }
 
 pred valid {
@@ -100,6 +114,8 @@ pred valid {
 
     depthCalc
     pathCalc
+
+    onlyNecessary
 }
 
 pred monotonicDepth {
@@ -108,8 +124,18 @@ pred monotonicDepth {
     }
 }
 
+pred sinkResolved {
+    all i: Int | no Sink.path[i] or Sink.path[i] = 0
+}
+
+pred validSeq {
+    all v: Vertex | isSeqOf[v.path, Int]
+}
+
 assert valid is sat
+assert valid is sufficient for validSeq
 assert valid is sufficient for monotonicDepth
+assert valid is sufficient for sinkResolved for 16 Vertex
 
 pred nontrivial {
     some (Vertex - Root - Sink)
