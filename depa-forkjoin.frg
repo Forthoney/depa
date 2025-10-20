@@ -1,4 +1,5 @@
 #lang forge
+// option solver "../glucose/glucose-simp"
 
 sig Vertex {
     depth: one Int,
@@ -81,19 +82,27 @@ pred touchPoint[v: Vertex] {
 }
 
 pred pathCalc {
-    all spawn: {v: Vertex | spawnPoint[v]} {
+    -- If i am a spawn point, my children should have these values
+    all spawn: {v: Vertex | spawnPoint[v]} | {
         let j = nextIdx[inds[spawn.path]] | {
-            one left: spawn.children | left.path[j] = 4
-            one right: spawn.children | right.path[j] = -4
+            one left: spawn.children | left.path[j] = abs[divide[min[Int], 2]]
+            one right: spawn.children | right.path[j] = divide[min[Int], 2]
             all i: Int - j | {
-                spawn.children.path[i] = spawn.path[i]
+                all child: spawn.children | {
+                    child.path[i] = (one spawn.path[i] => divide[spawn.path[i], 2] else none)
+                }
             }
         }
     }
 
+    -- If i am a touch point, I should take these values from my parents
     all touch: {v: Vertex | touchPoint[v]} {
         let targetIdx = inds[children.touch.path] | {
-            all i: targetIdx | touch.path[i] = (sum parent: children.touch | sum[parent.path[i]])
+            all i: targetIdx | {
+                touch.path[i] = 
+                (some children.touch.path[i] => (sum parent: children.touch | sum[parent.path[i]])
+                else none)
+            }
             all j: Int - targetIdx | touch.path[j] = children.touch.path[j]
         }
     }
@@ -103,9 +112,11 @@ pred pathCalc {
 -- The premise is that DePa only creates vertices when they are actually needed
 pred onlyNecessary {
     all v: Vertex | {
-        spawnPoint[v] or
-        touchPoint[v] or
+        spawnPoint[v] or touchPoint[v] or
         spawnPoint[children.v] and touchPoint[v.children]
+    }
+    all v: Vertex | touchPoint[v] and not spawnPoint[v] implies {
+        all child: v.children | not spawnPoint[child]
     }
 }
 
@@ -135,7 +146,7 @@ pred validSeq {
 assert valid is sat
 assert valid is sufficient for validSeq
 assert valid is sufficient for monotonicDepth
-assert valid is sufficient for sinkResolved for 16 Vertex
+assert valid is sufficient for sinkResolved for 16 Vertex, 5 Int
 
 pred nontrivial {
     some (Vertex - Root - Sink)
