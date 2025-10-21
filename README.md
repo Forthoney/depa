@@ -3,23 +3,18 @@ A generalization of DePa to operate on DAGs as opposed to merely series-parallel
 This presents the algorithmic description without regard for efficiency
 
 ## Key differences
-The `path` is treated not as a list of bits, but rather as a **vector** of rational numbers.
+The `path` is treated not as a list of bits, but rather as a **vector** of rational numbers: $\mathbb{Q}^n$.
 
-The type of `path` is no longer a list of bits, but rather $\mathbb{Q}^n$.
-I imagine this can be substituted for something else, but rational numbers is the most straightforward for reasoning about the algorithm.
-
-When spawning new children, instead of appending a single L or R to the path,
-append 1 and -1 respectively.
+Let $p \in \mathbb{Q}^n$ be the path of the spawning vertex.
+Then the paths of the left and right children $l, r \in \mathbb{Q}^{n + 1}$ respectively, are 
+```math
+\forall i = 1, \dots, n: l_i = r_i = p_i / 2
 ```
-spawn(Vertex parent) {
-    let left, right = new Vertex(), new Vertex()
-
-    left.path = parent.path ++ 1
-    right.path = parent.path ++ -1
-    
-    left.depth = parent.depth + 1
-    right.depth = parent.depth + 1
-}
+```math
+l_{n + 1} = 1
+```
+```math
+r_{n + 1} = -1
 ```
 
-When touching/joining two parents, 
+When touching/joining two vertices, the path calculation is simply $c = l + r$ where $c$ is the path of the continuation.
