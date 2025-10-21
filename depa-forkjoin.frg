@@ -1,10 +1,7 @@
 #lang forge
 
 option no_overflow true
-// option solver "../glucose/glucose-simp"
 
-// abstract sig Path {val: one Int}
-// one sig Left, Right extends Path
 
 sig Vertex {
     depth: one Int,
